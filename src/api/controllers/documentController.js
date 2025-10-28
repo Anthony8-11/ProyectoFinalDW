@@ -1,4 +1,4 @@
-const documentService = require('../services/documentService');
+const documentService = require('../../services/documentService');
 
 class DocumentController {
 

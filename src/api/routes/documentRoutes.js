@@ -12,7 +12,8 @@ const upload = multer({
 });
 
 // Aplicamos el middleware de autenticación a todas las rutas de documentos
-router.use(authMiddleware);
+// `authMiddleware` exporta { authenticate }, así que apuntamos a la función.
+router.use(authMiddleware.authenticate);
 
 // POST /api/v1/documents
 // 1. authMiddleware (verifica token)
