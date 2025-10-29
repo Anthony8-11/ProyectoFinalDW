@@ -24,6 +24,16 @@ class AuthController {
   // Sign in a user
   async signIn(req, res) {
     try {
+      // Defensive checks: ensure authService.signIn exists and is not aliased to signUp
+      if (typeof authService.signIn !== 'function') {
+        console.error('authService.signIn is not a function. authService keys:', Object.keys(authService));
+        return res.status(500).json({ error: 'Server misconfiguration: signIn handler missing' });
+      }
+      if (authService.signIn === authService.signUp) {
+        console.error('authService.signIn is pointing to authService.signUp — possible miswire in service exports');
+        return res.status(500).json({ error: 'Server misconfiguration: signIn handler misassigned' });
+      }
+
       const { email, password } = req.body;
       if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required' });

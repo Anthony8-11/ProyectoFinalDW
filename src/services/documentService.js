@@ -20,12 +20,12 @@ class DocumentService {
 
     // 1. Definir la ruta en Supabase Storage
     const fileName = `${Date.now()}-${file.originalname}`;
-    const storagePath = `public/${fileName}`; // 'public' o el nombre de tu bucket
+    const storagePath = `public/${fileName}`;
 
     try {
       // 2. Subir el archivo a Supabase Storage
       const { data: storageData, error: storageError } = await supabase.storage
-        .from('documents') // Asegúrate que tu bucket se llame 'documents'
+        .from('documents')
         .upload(storagePath, file.buffer, {
           contentType: file.mimetype,
           cacheControl: '3600',
@@ -36,60 +36,66 @@ class DocumentService {
         throw new Error(`Error al subir el archivo: ${storageError.message}`);
       }
 
-      // 3. Crear el registro 'Pendiente' en la tabla 'documents'
+      // --- ¡¡ESTE ES EL BLOQUE QUE TE FALTABA!! ---
+      // 3. Crear el registro en la DB
       const { data: dbData, error: dbError } = await supabase
         .from('documents')
         .insert({
           file_name: file.originalname,
           storage_path: storagePath,
           user_id: userId,
-          status: 'Pendiente', // Marcamos como Pendiente
+          status: 'Pendiente',
         })
-        .select() // .select() devuelve el registro creado
-        .single(); // Esperamos un solo resultado
+        .select()
+        .single();
 
       if (dbError) {
         console.error('Error en Base de Datos Supabase:', dbError.message);
         throw new Error(`Error al crear registro en DB: ${dbError.message}`);
       }
 
+      // 4. ¡Ahora SÍ definimos newDocument!
       const newDocument = dbData;
+      // ---------------------------------------------
 
-      // 4. Llamar al Webhook de n8n (¡El paso clave!)
+      // 5. Obtener la URL pública del archivo
+      // (Ahora 'newDocument' existe y esto funciona)
+      const { data: urlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(newDocument.storage_path);
+      
+      const publicURL = urlData.publicUrl;
+
+      // 6. Llamar al Webhook de n8n
       const webhookUrl = process.env.N8N_WEBHOOK_URL;
       if (!webhookUrl) {
-        console.warn('Advertencia: N8N_WEBHOOK_URL no está configurada. El procesamiento no se iniciará.');
-        // En un caso real, podrías querer re-intentar esto.
-        // Por ahora, continuamos para no romper el flujo de subida.
-        return newDocument;
+        console.warn('Advertencia: N8N_WEBHOOK_URL no está configurada.');
+        return newDocument; // Devolvemos el documento aunque el webhook no esté
       }
 
       // Preparamos los datos para n8n
       const payload = {
         documentId: newDocument.id,
         storagePath: newDocument.storage_path,
-        fileName: newDocument.file_name,
+        publicURL: publicURL, // <-- Añadimos la URL pública
+        fileName: newDocument.file_name, // <-- Usamos la variable correcta
         userId: userId
       };
 
-      // Usamos fetch (nativo en Node.js 18+) para llamar al webhook
+      // Usamos fetch para llamar al webhook
       fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       }).catch(err => {
-        // La llamada al webhook es "dispara y olvida".
-        // Si falla, no queremos que falle la subida del usuario.
-        // Solo lo registramos en la consola.
         console.error('Error al llamar al webhook de n8n:', err.message);
       });
-
-      // 5. Devolver el documento creado al controlador
+      
+      // 7. Devolver el documento creado al controlador
       return newDocument;
 
     } catch (error) {
       console.error('Error en uploadAndTriggerProcessing:', error);
-      // Si algo falla (subida o DB), lanzamos el error para que el controlador lo atrape
       throw error;
     }
   }

@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const documentRoutes = require('./api/routes/documentRoutes');
 const authRoutes = require('./api/routes/authRoutes');
+const searchRoutes = require('./api/routes/searchRoutes');
 
 // --- Configuración Inicial ---
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.urlencoded({ extended: true })); // Para parsear form data
 // --- Rutas de la API ---
 app.use('/api/documents', documentRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/v1/search', searchRoutes);
 
 // --- Ruta de Prueba ---
 app.get('/', (req, res) => {
