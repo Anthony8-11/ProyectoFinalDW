@@ -17,10 +17,9 @@ router.use(authMiddleware.authenticate);
 
 // POST /api/v1/documents
 // 1. authMiddleware (verifica token)
-// 2. upload.array('files') (procesa múltiples archivos con Multer)
+// 2. upload.single('file') (procesa un único archivo con Multer)
 // 3. documentController.uploadDocument (nuestra lógica)
-// Permitimos hasta 20 archivos por subida para evitar abusos
-router.post('/', upload.array('files', 20), documentController.uploadDocument);
+router.post('/', upload.single('file'), documentController.uploadDocument);
 
 // Additional routes (e.g., GET, DELETE) can be added here if needed, but for now, focusing on upload
 
