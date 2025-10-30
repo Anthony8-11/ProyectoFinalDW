@@ -4,6 +4,7 @@ class AuthService {
   // Sign up a new user
   async signUp(email, password, userData = {}) {
     try {
+      // Create the user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -13,7 +14,24 @@ class AuthService {
       });
 
       if (error) throw error;
-      return data;
+
+      // If Supabase created a session immediately, return it.
+      if (data?.session) {
+        return data;
+      }
+
+      // Otherwise, attempt to sign in right away so the client receives a session/token
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        // If sign-in fails, still return the user info (created) so caller can handle flows
+        return data;
+      }
+
+      return signInData;
     } catch (error) {
       console.error('Error signing up:', error);
       throw error;

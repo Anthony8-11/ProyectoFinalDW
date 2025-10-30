@@ -11,12 +11,20 @@ class AuthController {
 
       const userData = { name, role };
       const result = await authService.signUp(email, password, userData);
+      // Return user and session (if available) so the frontend can store access token immediately
       res.status(201).json({
         message: 'User created successfully',
         user: result.user,
+        session: result.session || null,
       });
     } catch (error) {
       console.error('Error signing up:', error);
+      // Detect common "email already exists" errors from Supabase/Postgres
+      const msg = (error && error.message) ? String(error.message).toLowerCase() : '';
+      if (msg.includes('already') || msg.includes('duplicate') || msg.includes('user already') || error?.status === 409) {
+        return res.status(409).json({ error: 'El correo ya existe, utiliza otro' });
+      }
+
       res.status(500).json({ error: 'Failed to sign up' });
     }
   }

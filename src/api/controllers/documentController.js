@@ -7,21 +7,20 @@ class DocumentController {
    */
   async uploadDocument(req, res) {
     try {
-      const file = req.file; // 'file' viene de Multer
+      const files = req.files; // ahora recibimos múltiples archivos
       const userId = req.user.id; // 'user' viene de tu AuthMiddleware
 
-      if (!file) {
+      if (!files || files.length === 0) {
         return res.status(400).json({ message: 'No se adjuntó ningún archivo.' });
       }
 
-      // Llamamos al nuevo servicio
-      const newDocument = await documentService.uploadAndTriggerProcessing(file, userId);
+      // Procesar todos los archivos en paralelo
+      const results = await Promise.all(files.map(f => documentService.uploadAndTriggerProcessing(f, userId)));
 
-      // ¡Respuesta Clave! 202 Accepted
-      // Le decimos al cliente: "Recibido, tu solicitud está siendo procesada."
+      // Responder con 202 y lista de documentos creados
       res.status(202).json({
-        message: 'Archivo recibido y en cola para procesamiento.',
-        document: newDocument,
+        message: 'Archivos recibidos y en cola para procesamiento.',
+        documents: results,
       });
 
     } catch (error) {
