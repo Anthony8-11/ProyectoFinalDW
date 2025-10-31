@@ -31,6 +31,9 @@ router.get('/', documentController.getAllDocuments);
 // GET /api/documents/:id - obtener documento (debe ir después de /:id/url)
 router.get('/:id', documentController.getDocument);
 
+// POST /api/documents/:id/summarize - generar resumen del documento
+router.post('/:id/summarize', documentController.summarizeDocument);
+
 // Additional routes (e.g., GET, DELETE) can be added here if needed, but for now, focusing on upload
 
 module.exports = router;

@@ -86,6 +86,20 @@ class DocumentController {
       res.status(500).json({ error: 'Failed to delete document' });
     }
   }
+
+  // Summarize a document
+  async summarizeDocument(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user && req.user.id ? req.user.id : null;
+      const result = await documentService.summarizeDocument(id, userId);
+      res.json({ summary: result.summary });
+    } catch (error) {
+      console.error('Error summarizing document:', error);
+      const status = error && error.status ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Failed to summarize document' });
+    }
+  }
 }
 
 module.exports = new DocumentController();

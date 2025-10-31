@@ -33,12 +33,13 @@ async function search(query) {
   // Be defensive: different RPC/DB setups may return different field names. We'll try common ones.
   const sourcesMap = new Map();
   (chunks || []).forEach((chunk) => {
-    // possible id/name fields
-    const id = chunk.document_id || chunk.doc_id || chunk.document || chunk.source_id || chunk.file_id || chunk.id || null;
-    const name = chunk.document_name || chunk.file_name || chunk.filename || chunk.source || chunk.title || null;
-    const snippet = chunk.content || chunk.text || null;
-    const page = chunk.page || chunk.page_number || null;
-    const url = chunk.public_url || chunk.url || chunk.file_url || null;
+    // Prefer metadata fields if present (some pipelines store document id/name inside metadata JSON)
+    const meta = chunk.metadata || (chunk.metadata === null ? null : undefined);
+    const id = (meta && (meta.document_id || meta.doc_id || meta.file_id)) || chunk.document_id || chunk.doc_id || chunk.document || chunk.source_id || chunk.file_id || chunk.id || null;
+    const name = (meta && (meta.document_name || meta.file_name || meta.filename || meta.title)) || chunk.document_name || chunk.file_name || chunk.filename || chunk.source || chunk.title || null;
+    const snippet = chunk.content || chunk.text || (meta && (meta.text || meta.content)) || null;
+    const page = (meta && (meta.page || meta.page_number)) || chunk.page || chunk.page_number || null;
+    const url = chunk.public_url || chunk.url || chunk.file_url || (meta && meta.public_url) || null;
 
     // Choose a key to dedupe sources; fall back to name or content slice if no id
     const key = id || name || (snippet ? snippet.slice(0, 40) : `chunk-${Math.random().toString(36).slice(2,8)}`);
