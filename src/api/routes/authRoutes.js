@@ -11,6 +11,9 @@ router.post('/signin', authController.signIn);
 // POST /api/auth/signout - Sign out a user
 router.post('/signout', authController.signOut);
 
+// POST /api/auth/refresh - Exchange refresh token for a new session
+router.post('/refresh', authController.refreshSession);
+
 // GET /api/auth/me - Get current user (requires auth)
 router.get('/me', authController.getCurrentUser);
 

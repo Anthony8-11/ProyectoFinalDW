@@ -80,6 +80,40 @@ class AuthController {
       res.status(500).json({ error: 'Failed to get current user' });
     }
   }
+
+  // Refresh session using refresh token (server-side proxy to Supabase /auth/v1/token)
+  async refreshSession(req, res) {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) return res.status(400).json({ error: 'refreshToken required' });
+
+      const tokenUrl = `${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/token`;
+      const params = new URLSearchParams();
+      params.append('grant_type', 'refresh_token');
+      params.append('refresh_token', refreshToken);
+
+      const resp = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          apikey: process.env.SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}`
+        },
+        body: params.toString()
+      });
+
+      const data = await resp.json();
+      if (!resp.ok) {
+        return res.status(resp.status).json(data);
+      }
+
+      // Return the session structure so frontend can persist access & refresh tokens
+      return res.json({ session: data });
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+      res.status(500).json({ error: 'Failed to refresh session' });
+    }
+  }
 }
 
 module.exports = new AuthController();

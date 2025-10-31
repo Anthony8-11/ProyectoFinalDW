@@ -8,7 +8,8 @@ const authMiddleware = require('../middleware/authMiddleware'); // Asumiendo que
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // Límite de 10MB
+  // Aumentado temporalmente para pruebas a 50MB. Ajustar según necesidades.
+  limits: { fileSize: 50 * 1024 * 1024 }
 });
 
 // Aplicamos el middleware de autenticación a todas las rutas de documentos
@@ -20,6 +21,15 @@ router.use(authMiddleware.authenticate);
 // 2. upload.single('file') (procesa un único archivo con Multer)
 // 3. documentController.uploadDocument (nuestra lógica)
 router.post('/', upload.single('file'), documentController.uploadDocument);
+
+// GET /api/documents/:id/url - obtiene la URL pública (protegido)
+router.get('/:id/url', documentController.getPublicUrl);
+
+// GET /api/documents - listar documentos
+router.get('/', documentController.getAllDocuments);
+
+// GET /api/documents/:id - obtener documento (debe ir después de /:id/url)
+router.get('/:id', documentController.getDocument);
 
 // Additional routes (e.g., GET, DELETE) can be added here if needed, but for now, focusing on upload
 

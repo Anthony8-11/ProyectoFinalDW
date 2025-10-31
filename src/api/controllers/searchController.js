@@ -9,8 +9,9 @@ class SearchController {
     }
 
     try {
-      const answer = await searchService.search(query);
-      return res.status(200).json({ answer });
+      const result = await searchService.search(query);
+      // result is { answer, sources }
+      return res.status(200).json({ answer: result.answer, sources: result.sources });
     } catch (error) {
       console.error('Search service error:', error);
       return res.status(500).json({ error: 'Internal server error' });

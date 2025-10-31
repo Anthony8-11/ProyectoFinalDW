@@ -24,8 +24,11 @@ class DocumentController {
       });
 
     } catch (error) {
-      console.error('Error en uploadDocument Controller:', error.message);
-      res.status(500).json({ message: 'Error interno del servidor al procesar el archivo.' });
+      // Log completo para diagnóstico
+      console.error('Error en uploadDocument Controller:', error && error.stack ? error.stack : error);
+      // En desarrollo es útil devolver el detalle del error para depuración en frontend
+      const detail = (error && error.message) ? error.message : 'Error interno al procesar el archivo.';
+      res.status(500).json({ message: 'Error interno del servidor al procesar el archivo.', detail });
     }
   }
 
@@ -44,10 +47,27 @@ class DocumentController {
     }
   }
 
+  // Get a document's public URL by ID
+  async getPublicUrl(req, res) {
+    try {
+      const { id } = req.params;
+      if (!id) return res.status(400).json({ error: 'Document id required' });
+      const url = await documentService.getPublicUrl(id);
+      if (!url) return res.status(404).json({ error: 'Public URL not found' });
+      res.json({ url });
+    } catch (error) {
+      console.error('Error getting public URL:', error);
+      res.status(500).json({ error: 'Failed to get public URL' });
+    }
+  }
+
   // Get all documents
   async getAllDocuments(req, res) {
     try {
-      const documents = await documentService.getAllDocuments();
+      // Support optional query params for filtering/sorting/search
+      const userId = req.user && req.user.id ? req.user.id : null;
+      const { status, sort, q } = req.query;
+      const documents = await documentService.getAllDocuments(userId, { status, sort, q });
       res.json(documents);
     } catch (error) {
       console.error('Error fetching documents:', error);
